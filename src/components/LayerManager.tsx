@@ -69,7 +69,6 @@ const LayerItem = styled.div`
     align-items: center;
     gap: 8px;
     padding: 8px;
-    border-bottom: 1px solid #eee;
 `;
 
 const Label = styled.label`
