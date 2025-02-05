@@ -2,29 +2,29 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import "ol/ol.css";
-import { Feature, Map } from "ol";
-import { View } from "ol";
-import GeoJSON from "ol/format/GeoJSON";
+import { Feature, Map, View } from "ol";
 import { Vector as VectorLayer } from "ol/layer";
 import { Vector as VectorSource, XYZ } from "ol/source";
 import proj4 from "proj4";
 import { register } from "ol/proj/proj4";
-import Style from "ol/style/Style";
-import Fill from "ol/style/Fill";
-import Stroke from "ol/style/Stroke";
 import { Geometry } from "ol/geom";
-import WebGLTileLayer from "ol/layer/WebGLTile";
 import VECTOR_LAYERS_CONFIG from "../constants/vectorLayersConfig";
+import RASTER_LAYERS_CONFIG from '../constants/layersConfig';
 import LayerManager from './LayerManager';
-import RASTER_LAYERS_CONFIG from "../constants/layersConfig";
-import { createWebGLTileLayer } from "../utils/rasterUtils";
+import DataTileSource from "ol/source/DataTile";
+import WebGLTileLayer from "ol/layer/WebGLTile";
+import { createRasterLayer } from '../utils/rasterUtils';
+import { createVectorLayer } from "../utils/vectorUtils";
+import OpacityControl from './OpacityControl';
+import CoordinateDisplay from './CoordinateDisplay';
 
 interface LayerInfo {
     id: string;
     name: string;
-    layer: TileLayer<XYZ> | VectorLayer<VectorSource<Feature<Geometry>>> | WebGLTileLayer;
+    layer: TileLayer<DataTileSource> | VectorLayer<VectorSource<Feature<Geometry>>> | TileLayer<XYZ> | WebGLTileLayer;
     visible: boolean;
     type: 'vector' | 'raster' | 'height';
+    opacity?: number;
 }
 
 const registerProjections = () => {
@@ -40,6 +40,7 @@ const MapComponent = () => {
     const [layers, setLayers] = useState<LayerInfo[]>([]);
     const layersRef = useRef<LayerInfo[]>([]);
     const layersLoadedRef = useRef(false);
+    const [isOpacityPanelOpen, setIsOpacityPanelOpen] = useState(false);
 
     const toggleLayerVisibility = useCallback((layerId: string) => {
         const layerInfo = layersRef.current.find(l => l.id === layerId);
@@ -56,64 +57,43 @@ const MapComponent = () => {
         }
     }, []);
 
-    const transformToFeatureCollection = (data: any) => {
-        if (data.results) {
-            return {
-                type: "FeatureCollection",
-                features: data.results.map((result: any) => ({
-                    type: "Feature",
-                    geometry: {
-                        type: result.geom.type,
-                        coordinates: [result.geom.coordinates[0].map((coord: number[]) => [coord[0], coord[1]])],
-                    },
-                    properties: result,
-                }))
-            };
+    const handleOpacityChange = useCallback((layerId: string, newOpacity: number) => {
+        const layerInfo = layersRef.current.find(l => l.id === layerId);
+        if (layerInfo) {
+            layerInfo.layer.setOpacity(newOpacity);
+            layerInfo.opacity = newOpacity;
+
+            setLayers(prev => prev.map(layer =>
+                layer.id === layerId
+                    ? { ...layer, opacity: newOpacity }
+                    : layer
+            ));
         }
-        return data;
-    };
-    
-    const createVectorLayer = async (config: typeof VECTOR_LAYERS_CONFIG[0]) => {
-        const response = await fetch(config.url);
-        const data = await response.json();
-        const featureCollection = transformToFeatureCollection(data);
-        
-        return new VectorLayer({
-            source: new VectorSource({
-                features: new GeoJSON().readFeatures(featureCollection, {
-                    dataProjection: config.dataProjection,
-                    featureProjection: config.featureProjection,
-                }),
-            }),
-            style: new Style({
-                fill: new Fill({ color: config.fillColor }),
-                stroke: new Stroke({ color: config.strokeColor, width: config.strokeWidth })
-            })
-        });
-    };
+    }, []);
 
     useEffect(() => {
         if (!mapElement.current) return;
+
+        registerProjections();
 
         const initialMap = new Map({
             target: mapElement.current,
             layers: [
                 new TileLayer({
                     source: new OSM(),
-                }),
+                })
             ],
             view: new View({
                 projection: 'EPSG:3857',
-                center: [2000000, 6000000],
-                zoom: 4,
+                center: [5575812.814, 5996057.464000234],
+                zoom: 2,
+                constrainResolution: true
             }),
         });
 
         setMap(initialMap);
 
-        return () => {
-            initialMap.setTarget(undefined);
-        };
+        return () => initialMap.setTarget('');
     }, []);
 
     useEffect(() => {
@@ -122,26 +102,42 @@ const MapComponent = () => {
 
         registerProjections();
 
-        const loadLayers = async () => {
+        const loadAllLayers = async () => {
             try {
-                const loadedLayers = await Promise.all(
-                    VECTOR_LAYERS_CONFIG.map(async (config) => {
-                        const vectorLayer = await createVectorLayer(config);
-                        map.addLayer(vectorLayer);
+
+                const rasterLayers = await Promise.all(
+                    RASTER_LAYERS_CONFIG.map(async (config) => {
+                        const layer = await createRasterLayer(config);
+                        map.addLayer(layer);
                         return {
                             id: config.id,
                             name: config.name,
-                            layer: vectorLayer,
+                            layer,
                             visible: true,
-                            type: 'vector' as const
+                            type: config.type,
                         };
                     })
                 );
 
-                layersRef.current = loadedLayers;
-                setLayers(loadedLayers);
+                const vectorLayers = await Promise.all(
+                    VECTOR_LAYERS_CONFIG.map(async (config) => {
+                        const layer = await createVectorLayer(config);
+                        map.addLayer(layer);
+                        return {
+                            id: config.id,
+                            name: config.name,
+                            layer,
+                            visible: true,
+                            type: 'vector' as const,
+                        };
+                    })
+                );
 
-                const extent = loadedLayers.reduce((acc, layerInfo) => {
+                const allLayers = [...rasterLayers, ...vectorLayers];
+                layersRef.current = allLayers;
+                setLayers(allLayers);
+
+                const vectorExtent = vectorLayers.reduce((acc, layerInfo) => {
                     const source = layerInfo.layer.getSource() as VectorSource;
                     const layerExtent = source.getExtent();
                     if (!acc) return layerExtent;
@@ -154,10 +150,9 @@ const MapComponent = () => {
                     ];
                 }, undefined as number[] | undefined);
 
-                if (extent) {
-                    map.getView().fit(extent, {
+                if (vectorExtent) {
+                    map.getView().fit(vectorExtent, {
                         padding: [50, 50, 50, 50],
-                        maxZoom: 18
                     });
                 }
             } catch (error) {
@@ -165,7 +160,7 @@ const MapComponent = () => {
             }
         };
 
-        loadLayers();
+        loadAllLayers();
     }, [map]);
 
     return (
@@ -174,10 +169,57 @@ const MapComponent = () => {
                 layers={layers}
                 onToggleLayer={toggleLayerVisibility}
             />
+            <button style={{
+                position: 'absolute',
+                bottom: '70px',
+                right: '30px',
+                width: '50px',
+                height: '50px',
+                fontSize: '20px',
+                textAlign: 'center',
+                borderRadius: '50%',
+                backgroundColor: '#00B0EF',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                zIndex: 1001,
+            }} onClick={() => setIsOpacityPanelOpen(!isOpacityPanelOpen)}>
+                {isOpacityPanelOpen ? 'x' : 'o'}
+            </button>
+            {isOpacityPanelOpen && (
+                <div style={{
+                    position: 'absolute',
+                    top: '90px',
+                    right: '10px',
+                    background: '#404040',
+                    color: 'white',
+                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
+                    borderRadius: '10px',
+                    padding: '20px',
+                    boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}>
+                        {layers.map(layer => (
+                            <OpacityControl
+                                key={layer.id}
+                                layerId={layer.id}
+                                layerName={layer.name}
+                                initialOpacity={layer.opacity || 1}
+                                onOpacityChange={handleOpacityChange}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
             <div 
                 ref={mapElement} 
-                style={{ width: '100%', height: '100vh' }}
+                style={{ width: '100%', height: '90vh' }}
             />
+            <CoordinateDisplay map={map} />
         </div>
     );
 };

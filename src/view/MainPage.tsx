@@ -26,6 +26,8 @@ const Card = styled(NavLink)`
     transition: transform 0.3s;
     text-decoration: none;
     color: white;
+    padding: 20px;
+    text-align: center;
 
     &:hover {
         color: #363636!important;
@@ -41,10 +43,10 @@ const MainPage: React.FC = () => {
     return (
         <Container>
             <Card to="/mapa">
-                <h2>Mapa</h2>
+                <h2>Mapa 2D</h2>
             </Card>
             <Card to="/3d">
-                <h2>Widok 3D</h2>
+                <h2>Chmura Punktów 3D</h2>
             </Card>
         </Container>
     );

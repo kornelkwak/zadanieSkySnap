@@ -6,6 +6,8 @@ import { Vector as VectorSource, XYZ } from 'ol/source';
 import { Vector as VectorLayer } from 'ol/layer';
 import TileLayer from 'ol/layer/Tile';
 import WebGLTileLayer from 'ol/layer/WebGLTile';
+import DataTileSource from 'ol/source/DataTile';
+import React from 'react';
 
 interface PanelProps {
     $isOpen: boolean;
@@ -76,11 +78,6 @@ const Label = styled.label`
     font-size: 14px;
 `;
 
-const LayerType = styled.span`
-    color: #666;
-    font-size: 12px;
-`;
-
 const Checkbox = styled.input`
     margin: 0;
 `;
@@ -88,17 +85,18 @@ const Checkbox = styled.input`
 interface LayerInfo {
     id: string;
     name: string;
-    layer: TileLayer<XYZ> | VectorLayer<VectorSource<Feature<Geometry>>> | WebGLTileLayer;
+    layer: TileLayer<DataTileSource> | VectorLayer<VectorSource<Feature<Geometry>>> | TileLayer<XYZ> | WebGLTileLayer;
     visible: boolean;
     type: 'vector' | 'raster' | 'height';
+    opacity?: number;
 }
 
 interface LayerManagerProps {
-    layers: LayerInfo[];
+    layers: any[];
     onToggleLayer: (layerId: string) => void;
 }
 
-const LayerManager: FC<LayerManagerProps> = ({ layers, onToggleLayer }) => {
+const LayerManager: React.FC<LayerManagerProps> = ({ layers, onToggleLayer }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -122,9 +120,6 @@ const LayerManager: FC<LayerManagerProps> = ({ layers, onToggleLayer }) => {
                             />
                             <Label htmlFor={layer.id}>
                                 {layer.name}
-                                {layer.type === 'height' && (
-                                    <LayerType> (Height data)</LayerType>
-                                )}
                             </Label>
                         </LayerItem>
                     ))}

@@ -76,12 +76,12 @@ const TopBar: React.FC = () => {
                     </li>
                     <li>
                         <StyledNavLink to="/mapa">
-                            Mapa
+                            Mapa 2D
                         </StyledNavLink>
                     </li>
                     <li>
                         <StyledNavLink to="/3d">
-                            Widok 3D
+                        Chmura Punktów 3D
                         </StyledNavLink>
                     </li>
                 </ul>
