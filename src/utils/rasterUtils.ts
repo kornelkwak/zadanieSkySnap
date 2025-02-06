@@ -4,6 +4,9 @@ import TileLayer from "ol/layer/Tile";
 import lerc from "lerc";
 import { transformExtent } from "ol/proj";
 
+/**
+ * Interface representing raster metadata.
+ */
 interface RasterMetadata {
     minVal: number;
     maxVal: number;
@@ -15,11 +18,25 @@ interface RasterMetadata {
     tileSize: number;
 }
 
+/**
+ * Loads raster metadata from a given URL.
+ * @param {string} metadataUrl - The URL to fetch metadata from.
+ * @returns {Promise<RasterMetadata>} - A promise that resolves to the raster metadata.
+ */
 export const loadRasterMetadata = async (metadataUrl: string): Promise<RasterMetadata> => {
     const response = await fetch(metadataUrl);
     return await response.json();
 };
 
+/**
+ * Loads and decodes a LERC tile.
+ * @param {Object} z - The zoom level.
+ * @param {Object} y - The tile row.
+ * @param {Object} x - The tile column.
+ * @param {string} tileUrlTemplate - The URL template for the tile.
+ * @param {RasterMetadata} metadata - The raster metadata.
+ * @returns {Promise<ImageBitmap>} - A promise that resolves to an ImageBitmap.
+ */
 const lercLoader = async (z: { toString: () => string; }, y: { toString: () => string; }, x: { toString: () => string; }, tileUrlTemplate: string, metadata: RasterMetadata) => {
            
     const url = tileUrlTemplate
@@ -42,18 +59,16 @@ const lercLoader = async (z: { toString: () => string; }, y: { toString: () => s
             const value = lercData.pixels[0][srcIndex];
 
             if (isNaN(value)) {
-                data[destIndex * 4 + 3] = 0; // Przezroczysty dla braku danych
+                data[destIndex * 4 + 3] = 0;
             } else {
-                // Normalizacja względem globalnego zakresu z metadanych
+                
                 const normalized = (value - metadata.minVal) / (metadata.maxVal - metadata.minVal);
                 if (normalized < 0.5) {
-                    // Od niebieskiego do zielonego
                     const t = normalized * 2;
                     data[destIndex * 4] = 0;                  // R
                     data[destIndex * 4 + 1] = Math.floor(255 * t);  // G
                     data[destIndex * 4 + 2] = Math.floor(255 * (1 - t)); // B
                 } else {
-                    // Od zielonego do czerwonego
                     const t = (normalized - 0.5) * 2;
                     data[destIndex * 4] = Math.floor(255 * t);     // R
                     data[destIndex * 4 + 1] = Math.floor(255 * (1 - t)); // G
@@ -68,6 +83,16 @@ const lercLoader = async (z: { toString: () => string; }, y: { toString: () => s
     return await createImageBitmap(imageData);
 };
 
+/**
+ * Creates a raster layer using the provided configuration.
+ * @param {Object} config - The configuration object.
+ * @param {string} config.metadataUrl - The URL to fetch metadata from.
+ * @param {string} config.projection - The projection of the raster layer.
+ * @param {string} config.tileUrlTemplate - The URL template for the tiles.
+ * @param {number} config.opacity - The opacity of the layer.
+ * @param {number} config.zIndex - The z-index of the layer.
+ * @returns {Promise<TileLayer>} - A promise that resolves to a TileLayer.
+ */
 export const createRasterLayer = async (config: any) => {
     const metadata = await loadRasterMetadata(config.metadataUrl);
     

@@ -30,6 +30,9 @@ const Value = styled.span`
     text-align: right;
 `;
 
+/**
+ * Props for the OpacityControl component.
+ */
 interface OpacityControlProps {
     layerId: string;
     layerName: string;
@@ -37,6 +40,11 @@ interface OpacityControlProps {
     onOpacityChange: (layerId: string, newOpacity: number) => void;
 }
 
+/**
+ * OpacityControl component for adjusting the opacity of a layer.
+ * @param {OpacityControlProps} props - The props for the component.
+ * @returns {JSX.Element} - The rendered component.
+ */
 const OpacityControl: React.FC<OpacityControlProps> = ({ layerId, layerName, initialOpacity, onOpacityChange }) => {
     const [opacity, setOpacity] = useState(initialOpacity);
 

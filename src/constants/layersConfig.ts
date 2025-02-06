@@ -8,6 +8,16 @@ const RASTER_LAYERS_CONFIG = [
         tileUrlTemplate: '/data/6/rasters/499/499/{z}/{y}/{x}.lerc',
         zIndex: 1,
         projection: 'EPSG:2176'
+    },
+    {
+        id: 'rgb-raster',
+        name: 'Raster RGB',
+        type: 'height' as const,
+        url: '/data/6/rasters/500/500',
+        metadataUrl: '/data/6/rasters/500/500/metadata.json',
+        tileUrlTemplate: '/data/6/rasters/500/500/{z}/{y}/{x}.lerc',
+        zIndex: 1,
+        projection: 'EPSG:2176'
     }
 ];
 

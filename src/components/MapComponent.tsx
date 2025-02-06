@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import "ol/ol.css";
+import styled from 'styled-components';
 import { Feature, Map, View } from "ol";
 import { Vector as VectorLayer } from "ol/layer";
 import { Vector as VectorSource, XYZ } from "ol/source";
@@ -15,9 +16,12 @@ import DataTileSource from "ol/source/DataTile";
 import WebGLTileLayer from "ol/layer/WebGLTile";
 import { createRasterLayer } from '../utils/rasterUtils';
 import { createVectorLayer } from "../utils/vectorUtils";
-import OpacityControl from './OpacityControl';
 import CoordinateDisplay from './CoordinateDisplay';
+import OpacityPanel from './OpacityPanel';
 
+/**
+ * Interface representing layer information.
+ */
 interface LayerInfo {
     id: string;
     name: string;
@@ -27,6 +31,9 @@ interface LayerInfo {
     opacity?: number;
 }
 
+/**
+ * Registers custom projections.
+ */
 const registerProjections = () => {
     proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
     proj4.defs("EPSG:2176", "+proj=tmerc +lat_0=0 +lon_0=15 +k=0.999923 +x_0=5500000 +y_0=0 +ellps=GRS80 +units=m +no_defs +type=crs");
@@ -34,6 +41,31 @@ const registerProjections = () => {
     register(proj4);
 }
 
+const OpacityButton = styled.button`
+    position: absolute;
+    bottom: 70px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #00B0EF;
+    color: white;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+`;
+
+const MapDiv = styled.div`
+    width: 100%;
+    height: 90vh;
+`;
+
+/**
+ * MapComponent functional component.
+ * @returns {JSX.Element} - The rendered component.
+ */
 const MapComponent = () => {
     const [map, setMap] = useState<Map | null>(null);
     const mapElement = useRef<HTMLDivElement | null>(null);
@@ -42,6 +74,10 @@ const MapComponent = () => {
     const layersLoadedRef = useRef(false);
     const [isOpacityPanelOpen, setIsOpacityPanelOpen] = useState(false);
 
+    /**
+     * Toggles the visibility of a layer.
+     * @param {string} layerId - The ID of the layer to toggle.
+     */
     const toggleLayerVisibility = useCallback((layerId: string) => {
         const layerInfo = layersRef.current.find(l => l.id === layerId);
         if (layerInfo) {
@@ -57,6 +93,11 @@ const MapComponent = () => {
         }
     }, []);
 
+    /**
+     * Handles the opacity change of a layer.
+     * @param {string} layerId - The ID of the layer to change opacity.
+     * @param {number} newOpacity - The new opacity value.
+     */
     const handleOpacityChange = useCallback((layerId: string, newOpacity: number) => {
         const layerInfo = layersRef.current.find(l => l.id === layerId);
         if (layerInfo) {
@@ -169,56 +210,16 @@ const MapComponent = () => {
                 layers={layers}
                 onToggleLayer={toggleLayerVisibility}
             />
-            <button style={{
-                position: 'absolute',
-                bottom: '70px',
-                right: '30px',
-                width: '50px',
-                height: '50px',
-                fontSize: '20px',
-                textAlign: 'center',
-                borderRadius: '50%',
-                backgroundColor: '#00B0EF',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                zIndex: 1001,
-            }} onClick={() => setIsOpacityPanelOpen(!isOpacityPanelOpen)}>
+            <OpacityButton title="Zmień widoczność warstw" onClick={() => setIsOpacityPanelOpen(!isOpacityPanelOpen)}>
                 {isOpacityPanelOpen ? 'x' : 'o'}
-            </button>
+            </OpacityButton>
             {isOpacityPanelOpen && (
-                <div style={{
-                    position: 'absolute',
-                    top: '90px',
-                    right: '10px',
-                    background: '#404040',
-                    color: 'white',
-                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                    borderRadius: '10px',
-                    padding: '20px',
-                    boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
-                    zIndex: 1000,
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}>
-                        {layers.map(layer => (
-                            <OpacityControl
-                                key={layer.id}
-                                layerId={layer.id}
-                                layerName={layer.name}
-                                initialOpacity={layer.opacity || 1}
-                                onOpacityChange={handleOpacityChange}
-                            />
-                        ))}
-                    </div>
-                </div>
+                <OpacityPanel
+                    layers={layers}
+                    onOpacityChange={handleOpacityChange}
+                />
             )}
-            <div 
-                ref={mapElement} 
-                style={{ width: '100%', height: '90vh' }}
-            />
+            <MapDiv ref={mapElement} />
             <CoordinateDisplay map={map} />
         </div>
     );

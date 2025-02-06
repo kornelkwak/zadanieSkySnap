@@ -1,12 +1,5 @@
 import { FC, useState } from 'react';
 import styled from 'styled-components';
-import { Feature } from 'ol';
-import { Geometry } from 'ol/geom';
-import { Vector as VectorSource, XYZ } from 'ol/source';
-import { Vector as VectorLayer } from 'ol/layer';
-import TileLayer from 'ol/layer/Tile';
-import WebGLTileLayer from 'ol/layer/WebGLTile';
-import DataTileSource from 'ol/source/DataTile';
 import React from 'react';
 
 interface PanelProps {
@@ -82,20 +75,19 @@ const Checkbox = styled.input`
     margin: 0;
 `;
 
-interface LayerInfo {
-    id: string;
-    name: string;
-    layer: TileLayer<DataTileSource> | VectorLayer<VectorSource<Feature<Geometry>>> | TileLayer<XYZ> | WebGLTileLayer;
-    visible: boolean;
-    type: 'vector' | 'raster' | 'height';
-    opacity?: number;
-}
-
+/**
+ * Props for the LayerManager component.
+ */
 interface LayerManagerProps {
     layers: any[];
     onToggleLayer: (layerId: string) => void;
 }
 
+/**
+ * LayerManager component for managing map layers.
+ * @param {LayerManagerProps} props - The props for the component.
+ * @returns {JSX.Element} - The rendered component.
+ */
 const LayerManager: React.FC<LayerManagerProps> = ({ layers, onToggleLayer }) => {
     const [isOpen, setIsOpen] = useState(false);
 

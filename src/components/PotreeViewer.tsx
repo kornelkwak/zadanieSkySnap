@@ -6,6 +6,10 @@ import "../utils/potree/libs/spectrum/spectrum.css";
 import "../utils/potree/libs/jstree/themes/mixed/style.css";
 import POINT_CLOUD_CONFIG from "../constants/pointCloudConfig";
 
+/**
+ * PotreeViewer component for displaying point clouds using Potree.
+ * @returns {JSX.Element} - The rendered component.
+ */
 const PotreeViewer = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
 

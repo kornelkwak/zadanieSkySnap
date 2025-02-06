@@ -5,6 +5,9 @@ import { Coordinate } from 'ol/coordinate';
 import { toStringHDMS } from 'ol/coordinate';
 import { transform } from 'ol/proj';
 
+/**
+ * Props for the CoordinateDisplay component.
+ */
 interface CoordinateDisplayProps {
     map: Map | null;
 }
@@ -39,6 +42,11 @@ const CoordinateSystemSelector = styled.select`
     cursor: pointer;
 `;
 
+/**
+ * CoordinateDisplay component for displaying map coordinates.
+ * @param {CoordinateDisplayProps} props - The props for the component.
+ * @returns {JSX.Element} - The rendered component.
+ */
 const CoordinateDisplay: React.FC<CoordinateDisplayProps> = ({ map }) => {
     const [coordinate, setCoordinate] = useState<Coordinate | null>(null);
     const [coordinateSystem, setCoordinateSystem] = useState<'EPSG:4326' | 'EPSG:3857' | 'EPSG:2176' | 'HDMS'>('EPSG:3857');

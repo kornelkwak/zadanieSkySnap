@@ -7,7 +7,9 @@ import MainPage from './view/MainPage';
 import MapView from './view/MapView';
 import PointCloudView from './view/PointCloudView';
 
-
+/**
+ * Define the routes for the application.
+ */
 const router = createBrowserRouter([
   {
       path: "",
@@ -33,6 +35,9 @@ const router = createBrowserRouter([
   },
 ]);
 
+/**
+ * Render the application.
+ */
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <RouterProvider router={router}></RouterProvider>
